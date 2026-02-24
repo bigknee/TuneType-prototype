@@ -3,11 +3,10 @@ import { songs } from "../data/songs";
 import { useState } from "react";
 import useUserStore from "../store/userStore";
 import api from "../lib/axios";
+import JoinedUsers from "../components/JoinedUsers";
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const isLoggedIn = location.state?.isLoggedIn || false;
 
   const user = useUserStore((state) => state.user);
 
@@ -182,32 +181,17 @@ const HomePage = () => {
           </div>
         </div>
 
-        {/* only show friends list if logged in */}
-        {isLoggedIn ? (
-          <div className="border-4 border-black rounded-3xl p-6 bg-white">
-            <h2 className="text-xl font-bold mb-4">FRIEND ACTIVITY</h2>
-            <div className="space-y-6 max-h-96 overflow-y-auto">
-              {friends.map((friend) => (
-                <div key={friend.id} className="flex items-center gap-3">
-                  <div className="w-12 h-12 border-2 border-black rounded-full flex items-center justify-center text-xl">
-                    C:
-                  </div>
-                  <div>
-                    <p className="font-bold">{friend.username}</p>
-                    <p className="text-sm text-gray-600">
-                      played: {friend.lastPlayed}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* Friends / Users List */}
+        <div className="border-4 border-black rounded-3xl p-6 bg-white">
+          <h2 className="text-xl font-bold mb-4">FRIENDS ONLINE</h2>
+          <div className="max-h-96 overflow-y-auto">
+            {user ? (
+              <JoinedUsers />
+            ) : (
+              <p className="text-gray-500 italic">Log in to view users</p>
+            )}
           </div>
-        ) : (
-          <div className="border-4 border-black rounded-3xl p-6 bg-white">
-            <h2 className="text-xl font-bold mb-4">FRIEND ACTIVITY</h2>
-            <p className="text-gray-600">Sign in to see friend activity</p>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
