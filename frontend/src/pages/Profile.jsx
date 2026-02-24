@@ -1,161 +1,144 @@
-import { useNavigate, useLocation } from 'react-router-dom';
-import { songs } from '../data/songs';
-import { useState } from 'react';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import useUserStore from "../store/userStore";
+import { songs } from "../data/songs";
+
+const profilePics = [
+  "blushing.jpeg",
+  "cute.jpeg",
+  "happy.jpeg",
+  "neutral.jpeg",
+  "sad.jpeg",
+  "smile.jpeg",
+];
 
 const Profile = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const isLoggedIn = location.state?.isLoggedIn || false;
-  const [bio, setBio] = useState('');
-  const [isEditingBio, setIsEditingBio] = useState(false);
-  const [favoriteSongs, setFavoriteSongs] = useState([]);
-  
-  const [selectedPic, setSelectedPic] = useState(() => {
-    const saved = localStorage.getItem('profilePicture');
-    return saved || '/assets/C:.jpeg';
-  });
-  const [showPicSelecter, setPicSelecter] = useState(false);
+  const user = useUserStore((state) => state.user);
+  const setUser = useUserStore((state) => state.setUser);
+  const [bio, setBio] = useState(user?.bio || "");
+  const [favoriteSongIds, setFavoriteSongIds] = useState(
+    user?.favoriteSongs || [],
+  );
+  const [showPicSelector, setShowPicSelector] = useState(false);
 
-  const profilePicOptions = [
-    '/assets/neutral.jpeg',
-    '/assets/sad.jpeg',
-    '/assets/cute.jpeg',
-    '/assets/happy.jpeg',
-    '/assets/blushing.jpeg',
-    '/assets/smile.jpeg'
-  ];
+  if (!user) {
+    return (
+      <p className="text-center mt-20 text-xl">
+        Please log in to view your profile.
+      </p>
+    );
+  }
 
-  const handlePicSelect = (pic) => {
-    // if (isLoggedIn) {
-      setSelectedPic(pic);
-      localStorage.setItem('profilePicture', pic);
-      setPicSelecter(false);
-    // }
+  const toggleFavoriteSong = (songId) => {
+    if (favoriteSongIds.includes(songId)) {
+      setFavoriteSongIds(favoriteSongIds.filter((id) => id !== songId));
+    } else {
+      setFavoriteSongIds([...favoriteSongIds, songId]);
+    }
   };
 
-  const toggleFavorite = (song) => {
-    setFavoriteSongs((prev) =>
-      prev.find((s) => s.id === song.id)
-        ? prev.filter((s) => s.id !== song.id)
-        : [...prev, song]
-    );
+  const selectProfilePic = (pic) => {
+    // Update user store with new profilePic
+    setUser({ ...user, profilePic: pic });
+    setShowPicSelector(false);
   };
 
   return (
-    <div 
-      className="flex flex-col items-start min-h-screen p-6"
+    <div
+      className="min-h-screen bg-yellow-50 p-6 flex flex-col items-center"
       style={{
         backgroundColor: "#fef9e7",
-        backgroundImage: `radial-gradient(circle at 10px 10px, #f6d365 5%, transparent 6%),
-                          radial-gradient(circle at 30px 30px, #f6d365 5%, transparent 6%)`,
+        backgroundImage: `
+          radial-gradient(circle at 10px 10px, #f6d365 5%, transparent 6%),
+          radial-gradient(circle at 30px 30px, #f6d365 5%, transparent 6%)
+        `,
         backgroundSize: "40px 40px",
       }}
     >
-      {/* back to homepage button */}
-      <header className="absolute top-4 right-4">
-        <button 
-          onClick={() => navigate('/homepage', { state: { isLoggedIn } })}
-          className="bg-white border-4 border-black px-8 py-4 rounded-2xl text-xl font-bold hover:bg-green-300 transition-colors shadow-lg"
-        >
-          Homepage
-        </button>
-      </header>
+      {/* Back button */}
+      <button
+        onClick={() => navigate("/homepage")}
+        className="self-start mb-4 px-4 py-2 bg-white border-2 border-black rounded-lg font-bold hover:bg-gray-200 transition"
+      >
+        ← Back to Homepage
+      </button>
 
-      {/* re-add guest message check when backend is ready */}
+      {/* Profile picture */}
+      <div
+        className="w-32 h-32 rounded-full overflow-hidden border-4 border-black mb-4 cursor-pointer"
+        onClick={() => setShowPicSelector(true)}
+      >
+        <img
+          src={`/assets/profilePics/${user.profilePic || "neutral.jpeg"}`}
+          alt="Profile"
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <p className="text-sm text-gray-600 mb-4">Click picture to change</p>
 
-      {/* profile pic + username + bio */}
-      <div className="flex items-start gap-4 mt-16 mb-8">
-        {/* profile pic with selector */}
-        <div className="relative">
-          <div 
-            onClick={() => setPicSelecter(!showPicSelecter)}
-            className="w-32 h-32 rounded-full border-4 border-black bg-white flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors shadow-lg overflow-hidden"
-          >
-            <img src={selectedPic} alt="Profile" className="w-full h-full object-cover" />
-          </div>
-          
-          {/* picture picker dropdown */}
-          {showPicSelecter && (
-            <div className="absolute top-full mt-2 left-0 border-4 border-black rounded-2xl bg-white p-4 shadow-lg z-50 flex gap-3">
-              {profilePicOptions.map((pic, index) => (
-                <div
-                  key={index}
-                  onClick={() => handlePicSelect(pic)}
-                  className={`w-16 h-16 flex-shrink-0 flex items-center justify-center cursor-pointer rounded-xl hover:bg-gray-200 transition-colors overflow-hidden ${
-                    selectedPic === pic ? 'bg-green-200 border-4 border-black' : 'border-4 border-gray-300'
-                  }`}
-                >
-                  <img src={pic} alt="Avatar option" className="w-full h-full object-cover" />
-                </div>
+      {/* Profile picture selector modal */}
+      {showPicSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Select a Profile Picture</h3>
+            <div className="grid grid-cols-3 gap-4">
+              {profilePics.map((pic) => (
+                <img
+                  key={pic}
+                  src={`/assets/profilePics/${pic}`}
+                  alt={pic}
+                  className="w-20 h-20 rounded-full cursor-pointer border-2 border-black hover:border-green-500"
+                  onClick={() => selectProfilePic(pic)}
+                />
               ))}
             </div>
-          )}
-        </div>
-
-        {/* username + bio */}
-        <div className="flex flex-col justify-center">
-          <h1 className="text-2xl font-bold">Username</h1>
-          {isEditingBio ? (
-            <div className="flex gap-2 mt-1">
-              <input
-                type="text"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Write your bio..."
-                className="border-2 border-black rounded-lg p-1 text-sm w-64"
-                autoFocus
-              />
-              <button
-                onClick={() => setIsEditingBio(false)}
-                className="text-sm font-bold border-2 border-black rounded-lg px-2 hover:bg-gray-200"
-              >
-                Save
-              </button>
-            </div>
-          ) : (
-            <p
-              onClick={() => setIsEditingBio(true)}
-              className="text-gray-500 text-sm mt-1 cursor-pointer hover:text-gray-700"
+            <button
+              className="mt-4 px-4 py-2 bg-red-200 border-2 border-black rounded-lg font-bold hover:bg-red-300 transition"
+              onClick={() => setShowPicSelector(false)}
             >
-              {bio || 'Add a bio...'}
-            </p>
-          )}
+              Cancel
+            </button>
+          </div>
         </div>
+      )}
+
+      {/* User name */}
+      <h2 className="text-3xl font-bold mb-2">{user.userName}</h2>
+
+      {/* Bio */}
+      <div className="w-full max-w-xl mb-6">
+        <label className="block font-bold mb-1">Bio:</label>
+        <textarea
+          className="w-full border-2 border-black rounded-lg p-2"
+          placeholder="Write a little about yourself..."
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          rows={4}
+        />
       </div>
 
-      {/* favorite songs */}
-      <div className="mt-4 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-3">FAVORITE SONGS</h2>
-        <div className="border-4 border-black rounded-2xl bg-white p-4 shadow-lg">
-          {songs.map((song) => {
-            const isFavorite = favoriteSongs.find((s) => s.id === song.id);
-            return (
-              <div
-                key={song.id}
-                className="flex items-center justify-between border-2 border-black rounded-lg p-3 mb-2 last:mb-0"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-200 border-2 border-black rounded flex-shrink-0"></div>
-                  <div>
-                    <p className="font-bold text-sm">{song.name}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => toggleFavorite(song)}
-                  className={`text-lg ${isFavorite ? 'text-red-500' : 'text-gray-300'}`}
-                >
-                  ♥
-                </button>
-              </div>
-            );
-          })}
-          {songs.length === 0 && (
-            <p className="text-gray-400 text-sm text-center py-4">No songs available yet.</p>
-          )}
+      {/* Favorite Songs */}
+      <div className="w-full max-w-xl">
+        <h3 className="text-xl font-bold mb-2">Favorite Songs:</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {songs.map((song) => (
+            <button
+              key={song.id}
+              onClick={() => toggleFavoriteSong(song.id)}
+              className={`p-2 border-2 rounded-lg text-left ${
+                favoriteSongIds.includes(song.id)
+                  ? "bg-green-300 border-black font-bold"
+                  : "bg-white border-gray-300"
+              }`}
+            >
+              {song.name}
+            </button>
+          ))}
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default Profile;
