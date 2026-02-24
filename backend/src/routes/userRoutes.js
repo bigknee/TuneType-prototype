@@ -1,3 +1,5 @@
+// backend/src/routes/userRoutes.js
+
 import express from "express";
 import { getAllUsers } from "../controllers/userController.js";
 
