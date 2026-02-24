@@ -1,6 +1,5 @@
-// frontend/src/pages/Profile.jsx
 import api from "../lib/axios";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useUserStore from "../store/userStore";
 import { songs } from "../data/songs";
@@ -18,27 +17,32 @@ const Profile = () => {
   const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
   const setUser = useUserStore((state) => state.setUser);
-  const [bio, setBio] = useState(user?.bio || "");
-  const [favoriteSongIds, setFavoriteSongIds] = useState(
-    user?.favoriteSongs || [],
-  );
-  const [showPicSelector, setShowPicSelector] = useState(false);
 
-  // Save profile changes
-  const saveProfile = async () => {
-    try {
-      const { data } = await api.put("/users/update", {
-        profilePic: user.profilePic,
-        bio,
-        favoriteSongs: favoriteSongIds,
-      });
-      setUser(data); // update Zustand store with latest user info
-      alert("Profile updated!");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save profile.");
-    }
-  };
+  const [bio, setBio] = useState("");
+  const [favoriteSongIds, setFavoriteSongIds] = useState([]);
+  const [showPicSelector, setShowPicSelector] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const { data } = await api.get("/auth/me");
+        setUser(data);
+        setBio(data.bio || "");
+        setFavoriteSongIds(data.favoriteSongs || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [setUser]);
+
+  if (loading) {
+    return <p className="text-center mt-20 text-xl">Loading profile...</p>;
+  }
 
   if (!user) {
     return (
@@ -57,9 +61,25 @@ const Profile = () => {
   };
 
   const selectProfilePic = (pic) => {
-    // Update user store with new profilePic
     setUser({ ...user, profilePic: pic });
     setShowPicSelector(false);
+  };
+
+  const saveProfile = async () => {
+    try {
+      const { data } = await api.put("/users/update", {
+        profilePic: user.profilePic,
+        bio,
+        favoriteSongs: favoriteSongIds,
+      });
+
+      setUser(data);
+
+      alert("Profile updated!");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save profile.");
+    }
   };
 
   return (
@@ -93,13 +113,11 @@ const Profile = () => {
           className="w-full h-full object-cover"
         />
       </div>
-      <p className="text-sm text-gray-600 mb-4">Click picture to change</p>
 
-      {/* Profile picture selector modal */}
       {showPicSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4">Select a Profile Picture</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-xl">
+            <h3 className="text-xl font-bold mb-4">Select Profile Picture</h3>
             <div className="grid grid-cols-3 gap-4">
               {profilePics.map((pic) => (
                 <img
@@ -112,7 +130,7 @@ const Profile = () => {
               ))}
             </div>
             <button
-              className="mt-4 px-4 py-2 bg-red-200 border-2 border-black rounded-lg font-bold hover:bg-red-300 transition"
+              className="mt-4 px-4 py-2 bg-red-200 border-2 border-black rounded-lg"
               onClick={() => setShowPicSelector(false)}
             >
               Cancel
@@ -121,7 +139,6 @@ const Profile = () => {
         </div>
       )}
 
-      {/* User name */}
       <h2 className="text-3xl font-bold mb-2">{user.userName}</h2>
 
       {/* Bio */}
@@ -129,7 +146,6 @@ const Profile = () => {
         <label className="block font-bold mb-1">Bio:</label>
         <textarea
           className="w-full border-2 border-black rounded-lg p-2"
-          placeholder="Write a little about yourself..."
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           rows={4}
@@ -146,7 +162,7 @@ const Profile = () => {
               onClick={() => toggleFavoriteSong(song.id)}
               className={`p-2 border-2 rounded-lg text-left ${
                 favoriteSongIds.includes(song.id)
-                  ? "bg-green-300 border-black font-bold"
+                  ? "bg-blue-300 border-black font-bold"
                   : "bg-white border-gray-300"
               }`}
             >
